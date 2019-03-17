@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 class Model:
     def __init__(self, nx, ny, nz):
         self.cell = np.zeros((nx,ny, nz))
+        self.fill_cells()
+        self.mat_properties()
+        self.fill_arrays()
         
     def mat_properties(self):
         nx, ny, nz = self.cell.shape
