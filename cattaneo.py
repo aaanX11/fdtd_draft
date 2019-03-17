@@ -93,38 +93,43 @@ dy = 1.5e-3
 dz = 1.2e-3
 a = dx
 
-w = T*C_V
-#w[:,:,:] = 300*C_V
+w = T*m.C_V
 
-def flux_x(qx, w):
-    qx[1:-1,...] = (1-dt)*qx[1:-1,...] -(k*dt/(C_V*dx))*(w[1:,...] - w[:-1,...])
+def flux_x(qx, T):
+    #print np.any(m.tau.flatten() < 1e-14)
+    qx[1:-1,...] = qx[1:-1,...]-(dt*qx[1:-1,...])/m.tau[1:,:,:] -(k/dx)*((dt*(T[1:,...] - T[:-1,...]))/m.tau[1:,:,:])
 
-def flux_y(qy, w):
-    qy[:,1:-1,:] = (1-dt)*qy[:,1:-1,:] -(k*dt/(C_V*dy))*(w[:,1:,:] - w[:,:-1,:])
+def flux_y(qy, T):
+    qy[:,1:-1,:] = qy[:,1:-1,:]-(dt*qy[:,1:-1,:])/m.tau[:,1:,:] -(k/dy)*((dt*(T[:,1:,:] - T[:,:-1,:]))/m.tau[:,1:,:])
 
-def flux_z(qz, w):
-    qz[...,1:-1] = (1-dt)*qz[...,1:-1] -(k*dt/(C_V*dz))*(w[:,:,1:] - w[:,:,:-1])
+def flux_z(qz, T):
+    qz[...,1:-1] = qz[...,1:-1]-(dt*qz[...,1:-1])/m.tau[:,:,1:] -(k/dz)*((dt*(T[:,:,1:] - T[:,:,:-1]))/m.tau[:,:,1:])
 
-def w_propgtn(qx, qy, qz, w):
-    w[:,:,:] = w[:,:,:] + (dt/dx)*(qx[1:,:,:] - qx[:-1,:,:])+ (dt/dy)*(qy[:,1:,:] - qy[:,:-1,:])+ (dt/dz)*(qz[:,:,1:] - qz[:,:,:-1])
+def w_propgtn(qx, qy, qz, w, T):
+    w[:,:,:] = w + (dt/dx)*(qx[1:,:,:] - qx[:-1,:,:])+ (dt/dy)*(qy[:,1:,:] - qy[:,:-1,:])+ (dt/dz)*(qz[:,:,1:] - qz[:,:,:-1])
+    T[:,:,:] = w/m.C_V
+    if np.any(T.flatten() > 600) or np.any(T.flatten() < 250):
+        print 'ALARM'
+        print T[:,:,grd.nz/2] > 600
+        raw_input()
 
-def boundaries(w, qx, qy, qz):
-    qx[0,:,:] = k0*(w[0,:,:]/C_V - 400)
-    qx[-1,:,:] = k0*(300 - w[-1,:,:]/C_V)
+def boundaries(w, qx, qy, qz,T):
+    qx[0,:,:] = k0*(T[0,:,:] - 400)
+    qx[-1,:,:] = k0*(300 - T[-1,:,:])
 
-    qy[:,0,:] = k0*(w[:,0,:]/C_V - 300)
-    qy[:,-1,:] = k0*(300 - w[:,-1,:]/C_V)
+    qy[:,0,:] = k0*(T[:,0,:] - 300)
+    qy[:,-1,:] = k0*(300 - T[:,-1,:])
 
-    qz[:,:,0] = k0*(w[:,:,0]/C_V - 300)
-    qz[:,:,-1] = k0*(300 - w[:,:,-1]/C_V)
+    qz[:,:,0] = k0*(T[:,:,0] - 300)
+    qz[:,:,-1] = k0*(300 - T[:,:,-1])
 
 t = 0
 def step(t):
-    flux_x(qx, w)
-    flux_y(qy, w)
-    flux_z(qz, w)
-    w_propgtn(qx, qy, qz, w)
-    boundaries(w, qx, qy, qz)
+    flux_x(qx, T)
+    flux_y(qy, T)
+    flux_z(qz, T)
+    w_propgtn(qx, qy, qz, w, T)
+    boundaries(w, qx, qy, qz, T)
 
 def show(step):
     plt.figure()
@@ -132,6 +137,7 @@ def show(step):
     plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],w[:,:,grd.nz/2])
     plt.gca().set_title(str(step))
     plt.show()
+
 
     
 for i in range(20000):
