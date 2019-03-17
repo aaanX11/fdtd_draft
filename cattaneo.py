@@ -16,16 +16,30 @@ class Model:
         self.cell[:,ny/3:ny/2,nz/2:] = 1
         self.cell[:,ny/3:ny/2,nz/2:] = 2
 
+    
     def fill_arrays(self):
-        data = np.loadtxt('test.txt')
-        rho = []*self.layers.shape()[0]
-        for i,lay in enumerate(self.layers):
-            rho = 
-            self.tau[lay_mask[i]] = 1
-            self.k[lay_mask[i]] = 2
-            self.C_V[lay_mask[i]]
-
+        nx, ny, nz = self.cell.shape
         
+        data = np.loadtxt('C:\ks_work\calculations\cattaneo_py_test\data1')
+
+        self.tau = np.zeros((nx,ny, nz))
+        self.k = np.zeros((nx,ny, nz))
+        self.C_V = np.zeros((nx,ny, nz))
+        
+        self.rho = [0]*self.layers.shape[0]
+        self.tau_tab = [0]*self.layers.shape[0]
+        self.k_tab = [0]*self.layers.shape[0]
+        self.C_V_tab = [0]*self.layers.shape[0]
+        for i,lay in enumerate(self.layers):
+            self.rho[i] = data[i][0]
+
+            self.tau_tab[i] = data[i][1]
+            self.tau[self.lay_mask[i,:,:,:]] = self.tau_tab[i]
+            self.k_tab[i] = data[i][2]
+            self.k[self.lay_mask[i,:,:,:]] = self.k_tab[i]
+            self.C_V_tab[i] = data[i][3]
+            self.C_V[self.lay_mask[i,:,:,:]] = self.C_V_tab[i]
+   
 class Grid:
     def __init__(self, x, y):
         self.nx = 25
