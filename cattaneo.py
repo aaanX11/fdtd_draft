@@ -6,11 +6,12 @@ class Model:
         self.cell = np.zeros((nx,ny, nz))
         
     def mat_properties(self):
+        nx, ny, nz = self.cell.shape
         self.layers = np.unique(self.cell.flatten())
-        lay_mask = np.empty((self.layers.shape()[0], nx, ny, nz),dtype=np.int32)
+        self.lay_mask = np.empty((self.layers.shape[0], nx, ny, nz),dtype=np.bool)
         
         for i,lay in enumerate(self.layers):
-            lay_mask[i] = (self.cell==lay)
+            self.lay_mask[i,:,:,:] = (self.cell==lay)
         
     def fill_cells(self):
         self.cell[:,ny/3:ny/2,nz/2:] = 1
