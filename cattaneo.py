@@ -184,10 +184,11 @@ def show_cell():
     #plt.show()
 
     
-for i in range(20000):
-    if i%1000 == 0:
+if __name__ == '__main__':
+    for i in range(100):
         print i
-        show(i)
-    step(t)
-    t += dt
+        step(t)
+        t += dt
+        if i%20 == 0:
+            show1(t)
 
