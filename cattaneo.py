@@ -139,6 +139,50 @@ def show(step):
     plt.show()
 
 
+class MidpointNormalize(colors.Normalize):
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a
+        # simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y))
+
+def show1(step):
+    fig,ax = plt.subplots()
+
+    f1, f2 = 295., 305.
+    cbarticks=np.arange(f1,f2,(f2-f1)/10., dtype = np.float)
+    mesh = ax.pcolormesh([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],T[:,:,grd.nz/2],cmap='coolwarm', vmin = f1, vmax = f2,
+                         norm=MidpointNormalize(vmin = f1, vmax = f2, midpoint=300.))
+    print T[:,:,grd.nz/2].min(), T[:,:,grd.nz/2].max()                         
+    cbar = fig.colorbar(mesh, ax=ax , cmap='coolwarm', ticks=cbarticks)
+    cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.1lf'))
+    cbar.ax.yaxis.set_minor_formatter(FormatStrFormatter('%.1lf'))
+    cbar.ax.set_yticklabels(['{:.5f}'.format(x) for x in cbarticks])
+    plt.show()
+
+def show_tau():
+    plt.figure()
+    plt.subplot(1, 1, 1)
+    plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)], m.tau[:,:,grd.nz/2],
+                 vmin = 0.9*np.amin(m.tau), vmax = 1.1*np.amax(m.tau), extend='both')
+    plt.gca().set_title('tau')
+    plt.colorbar()
+    #plt.show()
+
+def show_cell():
+    plt.figure()
+    plt.subplot(1, 1, 1)
+    plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)], m.cell[:,:,grd.nz/2],
+                 vmin = 0.9*np.amin(m.cell), vmax = 1.1*np.amax(m.cell), extend='both')
+    
+    plt.gca().set_title('cell')
+    plt.colorbar()
+    #plt.show()
+
     
 for i in range(20000):
     if i%1000 == 0:
