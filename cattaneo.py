@@ -5,25 +5,45 @@ class Model:
     def __init__(self, nx, ny, nz):
         self.cell = np.zeros((nx,ny, nz))
         
+        self.fill_cells()
+        self.mat_properties()
+        self.fill_arrays()
+        
+        
     def mat_properties(self):
+        nx, ny, nz = self.cell.shape
+        
         self.layers = np.unique(self.cell.flatten())
-        lay_mask = np.empty((self.layers.shape()[0], nx, ny, nz),dtype=np.int32)
+        self.lay_mask = np.empty((self.layers.shape[0], nx, ny, nz),dtype=np.int32)
         
         for i,lay in enumerate(self.layers):
-            lay_mask[i] = (self.cell==lay)
+            self.lay_mask[i] = (self.cell==lay)
         
     def fill_cells(self):
-        self.cell[:,ny/3:ny/2,nz/2:] = 1
-        self.cell[:,ny/3:ny/2,nz/2:] = 2
+        nx, ny, nz = self.cell.shape
+        
+        self.cell[nx/2:,ny/3:ny/2,:] = 1
+        self.cell[:nx/2,ny/3:ny/2,:] = 2
 
     def fill_arrays(self):
-        data = np.loadtxt('test.txt')
-        rho = []*self.layers.shape()[0]
+        nx = self.cell.shape[0]
+        ny = self.cell.shape[1]
+        nz = self.cell.shape[2]
+        self.C_V = np.zeros((nx,ny, nz))
+        self.tau = np.zeros((nx,ny, nz))
+        self.k = np.zeros((nx,ny, nz))
+        
+        data = np.loadtxt('data')
+        print self.layers.shape[0]
+        self.rho = np.zeros((self.layers.shape[0]))
+        print self.rho
         for i,lay in enumerate(self.layers):
-            rho = 
-            self.tau[lay_mask[i]] = 1
-            self.k[lay_mask[i]] = 2
-            self.C_V[lay_mask[i]]
+            print data[i,:]
+            print self.lay_mask[i,:,:,nz/2]
+            self.rho[i] = data[i,0]
+            self.tau[self.lay_mask[i]] = data[i,1]
+            self.k[self.lay_mask[i]] = data[i,2]
+            self.C_V[self.lay_mask[i]] = data[i,3]
 
         
 class Grid:
@@ -44,6 +64,19 @@ class Grid:
 #read .grd file
 grd = Grid('x','y')
 m = Model(grd.nx, grd.ny, grd.nz)
+dt = 1e-8
+dx = 1e-3
+dy = 1.5e-3
+dz = 1.2e-3
+a = dx
+def show1():
+    plt.figure()
+    plt.subplot(1, 1, 1)
+    plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],m.tau[:,:,grd.nz/2])
+    plt.gca().set_title("tau")
+    plt.colorbar()
+    plt.show()
+show1()
 
 qx = np.zeros((grd.nx+1,grd.ny, grd.nz))#fluxes - faces
 qy = np.zeros((grd.nx,grd.ny+1, grd.nz))
@@ -61,11 +94,7 @@ tau = 1e-9
 k = 1e6
 C_V = 1e5
 
-dt = 1e-8
-dx = 1e-3
-dy = 1.5e-3
-dz = 1.2e-3
-a = dx
+
 
 w = T*C_V
 #w[:,:,:] = 300*C_V
@@ -107,11 +136,15 @@ def show(step):
     plt.gca().set_title(str(step))
     plt.show()
 
-    
+
+
+
+show1()
 for i in range(20000):
+    
     if i%1000 == 0:
         print i
-        show(i)
+        #show(i)
     step(t)
     t += dt
 
