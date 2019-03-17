@@ -43,6 +43,14 @@ class Model:
             self.k[self.lay_mask[i,:,:,:]] = self.k_tab[i]
             self.C_V_tab[i] = data[i][3]
             self.C_V[self.lay_mask[i,:,:,:]] = self.C_V_tab[i]
+    def update(self, T):
+        nx, ny, nz = self.cell.shape
+        
+        for i,lay in enumerate(self.layers):
+            self.tau
+            self.tau[self.lay_mask[i,:,:,:]] = data[i][1]
+            self.k[self.lay_mask[i,:,:,:]] = data[i][2]
+            self.C_V[self.lay_mask[i,:,:,:]] = data[i][3]
    
 class Grid:
     def __init__(self, x, y):
