@@ -1,5 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.colorbar as colorbar
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+
+import ini
+k0 = ini.k0
+rho = ini.rho
+
+k = ini.k
+C_V = ini.c_E*ini.rho
+
+dt = 1e-9
+dx = ini.x
+dy = ini.x
+dz = ini.x
+a = dx
 
 class Model:
     def __init__(self, nx, ny, nz):
@@ -17,10 +33,18 @@ class Model:
             self.lay_mask[i,:,:,:] = (self.cell==lay)
         
     def fill_cells(self):
+        nx, ny, nz = self.cell.shape
         self.cell[:,ny/3:ny/2,nz/2:] = 1
         self.cell[:,ny/3:ny/2,nz/2:] = 2
+    def fill_arrays1(self):
+        self.rho[i] = rho
 
-    
+        self.tau_tab[i] = tau
+        self.tau[self.lay_mask[i,:,:,:]] = self.tau_tab[i]
+        self.k_tab[i] = k
+        self.k[self.lay_mask[i,:,:,:]] = self.k_tab[i]
+        self.C_V_tab[i] = C_V
+        self.C_V[self.lay_mask[i,:,:,:]] = self.C_V_tab[i]
     def fill_arrays(self):
         nx, ny, nz = self.cell.shape
         
@@ -78,20 +102,7 @@ qz = np.zeros((grd.nx,grd.ny, grd.nz+1))
 w = np.zeros((grd.nx,grd.ny, grd.nz))#w
 T = np.zeros((grd.nx,grd.ny, grd.nz))#w
 T[:,:,:] = 300
-
-
-k0 = 25 #Wt/m
-rho = 2.7
-
-tau = 1e-9
-k = 1e6
-C_V = 1e5
-
-dt = 1e-8
-dx = 1e-3
-dy = 1.5e-3
-dz = 1.2e-3
-a = dx
+T0 = 300
 
 w = T*m.C_V
 
@@ -110,12 +121,13 @@ def w_propgtn(qx, qy, qz, w, T):
     T[:,:,:] = w/m.C_V
     if np.any(T.flatten() > 600) or np.any(T.flatten() < 250):
         print 'ALARM'
-        print T[:,:,grd.nz/2] > 600
+        print T[:,grd.ny/2,grd.nz/2]
         raw_input()
 
 def boundaries(w, qx, qy, qz,T):
-    qx[0,:,:] = k0*(T[0,:,:] - 400)
-    qx[-1,:,:] = k0*(300 - T[-1,:,:])
+    qx[0,:,:] = k0*(T[0,:,:] - 300)
+    #qx[-1,:,:] = -k0*(400 - T[-1,:,:])
+    qx[-1,...] = qx[-1,...]-(dt*qx[-1,...])/m.tau[-1,:,:] -(m.k[-1,...]/dx)*((dt*(400. - T[-1,...]))/m.tau[-1,...])
 
     qy[:,0,:] = k0*(T[:,0,:] - 300)
     qy[:,-1,:] = k0*(300 - T[:,-1,:])
@@ -189,6 +201,6 @@ if __name__ == '__main__':
         print i
         step(t)
         t += dt
-        if i%20 == 0:
+        if i%1 == 0:
             show1(t)
 
