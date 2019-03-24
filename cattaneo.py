@@ -1,5 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.colorbar as colorbar
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+
+import ini
+k0 = ini.k0
+rho = ini.rho
+
+k = ini.k
+C_V = ini.c_E*ini.rho
+
+dt = 1e-9
+dx = ini.x
+dy = ini.x
+dz = ini.x
+a = dx
 
 class Model:
     def __init__(self, nx, ny, nz):
@@ -15,53 +31,33 @@ class Model:
         
     def mat_properties(self):
         nx, ny, nz = self.cell.shape
-<<<<<<< HEAD
-        
-        self.layers = np.unique(self.cell.flatten())
-        self.lay_mask = np.empty((self.layers.shape[0], nx, ny, nz),dtype=np.int32)
-        
-        for i,lay in enumerate(self.layers):
-            self.lay_mask[i] = (self.cell==lay)
-=======
+
         self.layers = np.unique(self.cell.flatten())
         self.lay_mask = np.empty((self.layers.shape[0], nx, ny, nz),dtype=np.bool)
         
         for i,lay in enumerate(self.layers):
             self.lay_mask[i,:,:,:] = (self.cell==lay)
->>>>>>> 4fe6b7a84335f1146885b1b3ac9992062f9ca109
         
     def fill_cells(self):
         nx, ny, nz = self.cell.shape
-        
-        self.cell[nx/2:,ny/3:ny/2,:] = 1
-        self.cell[:nx/2,ny/3:ny/2,:] = 2
+        self.cell[:,ny/3:ny/2,nz/2:] = 1
+        self.cell[:,ny/3:ny/2,nz/2:] = 2
+    def fill_arrays1(self):
+        self.rho[i] = rho
 
-    
+        self.tau_tab[i] = tau
+        self.tau[self.lay_mask[i,:,:,:]] = self.tau_tab[i]
+        self.k_tab[i] = k
+        self.k[self.lay_mask[i,:,:,:]] = self.k_tab[i]
+        self.C_V_tab[i] = C_V
+        self.C_V[self.lay_mask[i,:,:,:]] = self.C_V_tab[i]
+
     def fill_arrays(self):
-<<<<<<< HEAD
-        nx = self.cell.shape[0]
-        ny = self.cell.shape[1]
-        nz = self.cell.shape[2]
-        self.C_V = np.zeros((nx,ny, nz))
-        self.tau = np.zeros((nx,ny, nz))
-        self.k = np.zeros((nx,ny, nz))
-        
-        data = np.loadtxt('data')
-        print self.layers.shape[0]
-        self.rho = np.zeros((self.layers.shape[0]))
-        print self.rho
-        for i,lay in enumerate(self.layers):
-            print data[i,:]
-            print self.lay_mask[i,:,:,nz/2]
-            self.rho[i] = data[i,0]
-            self.tau[self.lay_mask[i]] = data[i,1]
-            self.k[self.lay_mask[i]] = data[i,2]
-            self.C_V[self.lay_mask[i]] = data[i,3]
-=======
+
         nx, ny, nz = self.cell.shape
         
-        data = np.loadtxt('C:\ks_work\calculations\cattaneo_py_test\data1')
->>>>>>> 4fe6b7a84335f1146885b1b3ac9992062f9ca109
+        #data = np.loadtxt('C:\ks_work\calculations\cattaneo_py_test\data1')
+        data = np.loadtxt('data')
 
         self.tau = np.zeros((nx,ny, nz))
         self.k = np.zeros((nx,ny, nz))
@@ -129,21 +125,14 @@ w = np.zeros((grd.nx,grd.ny, grd.nz))#w
 T = np.zeros((grd.nx,grd.ny, grd.nz))#w
 T[:,:,:] = 300
 
-
-k0 = 25 #Wt/m
-rho = 2.7
-
-tau = 1e-9
-k = 1e6
-C_V = 1e5
-
-
+T0 = 300
 
 w = T*m.C_V
 
 def flux_x(qx, T):
     #print np.any(m.tau.flatten() < 1e-14)
-    qx[1:-1,...] = qx[1:-1,...]-(dt*qx[1:-1,...])/m.tau[1:,:,:] -(k/dx)*((dt*(T[1:,...] - T[:-1,...]))/m.tau[1:,:,:])
+    #qx[1:-1,...] = ((dt)/(2*m.tau[1:,:,:]-dt))*qx[1:-1,...] -(k/dx)*((dt*(T[1:,...] - T[:-1,...]))/m.tau[1:,:,:])
+    qx[1:-1,...] = ((dt)/(2*m.tau[1:,:,:]-dt))*qx[1:-1,...] -(k/dx)*((dt*(T[1:,...] - T[:-1,...]))/m.tau[1:,:,:])
 
 def flux_y(qy, T):
     qy[:,1:-1,:] = qy[:,1:-1,:]-(dt*qy[:,1:-1,:])/m.tau[:,1:,:] -(k/dy)*((dt*(T[:,1:,:] - T[:,:-1,:]))/m.tau[:,1:,:])
@@ -152,16 +141,17 @@ def flux_z(qz, T):
     qz[...,1:-1] = qz[...,1:-1]-(dt*qz[...,1:-1])/m.tau[:,:,1:] -(k/dz)*((dt*(T[:,:,1:] - T[:,:,:-1]))/m.tau[:,:,1:])
 
 def w_propgtn(qx, qy, qz, w, T):
-    w[:,:,:] = w + (dt/dx)*(qx[1:,:,:] - qx[:-1,:,:])+ (dt/dy)*(qy[:,1:,:] - qy[:,:-1,:])+ (dt/dz)*(qz[:,:,1:] - qz[:,:,:-1])
+    w[:,:,:] = w - (dt/dx)*(qx[1:,:,:] - qx[:-1,:,:]) - (dt/dy)*(qy[:,1:,:] - qy[:,:-1,:]) - (dt/dz)*(qz[:,:,1:] - qz[:,:,:-1])
     T[:,:,:] = w/m.C_V
     if np.any(T.flatten() > 600) or np.any(T.flatten() < 250):
         print 'ALARM'
-        print T[:,:,grd.nz/2] > 600
+        print T[:,grd.ny/2,grd.nz/2]
         raw_input()
 
 def boundaries(w, qx, qy, qz,T):
-    qx[0,:,:] = k0*(T[0,:,:] - 400)
-    qx[-1,:,:] = k0*(300 - T[-1,:,:])
+    qx[0,:,:] = k0*(T[0,:,:] - 300)
+    #qx[-1,:,:] = -k0*(400 - T[-1,:,:])
+    qx[-1,...] = qx[-1,...]-(dt*qx[-1,...])/m.tau[-1,:,:] -(m.k[-1,...]/dx)*((dt*(400. - T[-1,...]))/m.tau[-1,...])
 
     qy[:,0,:] = k0*(T[:,0,:] - 300)
     qy[:,-1,:] = k0*(300 - T[:,-1,:])
@@ -185,18 +175,7 @@ def show(step):
     plt.show()
 
 
-<<<<<<< HEAD
 
-
-show1()
-for i in range(20000):
-    
-    if i%1000 == 0:
-        print i
-        #show(i)
-    step(t)
-    t += dt
-=======
 class MidpointNormalize(colors.Normalize):
     def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
         self.midpoint = midpoint
@@ -247,7 +226,7 @@ if __name__ == '__main__':
         print i
         step(t)
         t += dt
-        if i%20 == 0:
+        if i%1 == 0:
             show1(t)
->>>>>>> 4fe6b7a84335f1146885b1b3ac9992062f9ca109
+
 
