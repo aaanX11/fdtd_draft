@@ -39,8 +39,30 @@ def xiong2011():
     
 
     
-    return ({'rho' : rho_x, 'C_V' : C_V_ph, 'k' : k_x, 'tau' : tau_x}, {'C11' : C11_ph, 'C12' : C12_ph, 'C44' : C44_ph, 'alpha' : alpha_ph}, [i*x_ph for i in range(nx)], dt)
+    return ({'rho' : rho_x, 'C_V' : C_V_ph, 'k' : k_x, 'tau' : tau_x}, {'rho' : rho_x,'C11' : C11_ph, 'C12' : C12_ph, 'C44' : C44_ph, 'alpha' : alpha_ph})
 
+class Grid:
+    def __init__(self, x, y, z):
+        self.nx = 25
+        self.ny = 20
+        self.nz = 23
+        self.xi = [float(i+1) for i in range(self.nx)]
+        self.yi = [0.1*i for i in range(self.ny)]
+        #self.zi = [0.1*i for i in range(self.nz)]
+      
+        self.dxi05 = [i-j for i,j in zip(self.xi[1:], self.xi)]
+        self.dxi05.insert(0, self.dxi05[0])
+        self.dxi05.append(self.dxi05[-1])
+        self.xi05 = [i-0.5*j for i,j in zip(self.xi, self.dxi05)]
+        self.xi05.append(self.xi[-1]+0.5*self.dxi05[-1])
+        self.dx = min(self.dxi05)
+        self.dy = self.dx
+        self.dz = self.dx
+
+        self.dt = 1e-9
+      
+#read .grd file
+#grd = Grid('x','y','z')
 
 def from_file():
     #data = np.loadtxt('C:\ks_work\calculations\cattaneo_py_test\data1')
@@ -63,6 +85,5 @@ if __name__ == '__main__':
     r = xiong2011()
     print r[0]
     print r[1]
-    print r[2]
-    print r[3]
+   
  
