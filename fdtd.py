@@ -1,28 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+import ini
+_, mech = ini.xiong2011()
+rho = mech['rho']
+
+C11 = mech['C11']
+C12 = mech['C12']
+C44 = mech['C44']
+alpha = mech['alpha']
+
+grd = ini.Grid('x','y','z')
+dx = grd.dx
+dy = grd.dy
+dz = grd.dz
+dt = grd.dt
+
+K = (C11+2*C12)/3
+
+
 class Space:
     def __init__(self, nx, ny):
         self.cell = np.zeros((nx,ny))
 
-class Grid:
-    def __init__(self, nx, ny):
-        self.nx = nx
-        self.ny = ny
-        #self.nz = 10
-        self.xi = [float(i+1) for i in range(self.nx)]
-        self.yi = [0.1*i for i in range(self.ny)]
-        #self.zi = [0.1*i for i in range(self.nz)]
-      
-        self.dxi05 = [i-j for i,j in zip(self.xi[1:], self.xi)]
-        self.dxi05.insert(0, self.dxi05[0])
-        self.dxi05.append(self.dxi05[-1])
-        self.xi05 = [i-0.5*j for i,j in zip(self.xi, self.dxi05)]
-        self.xi05.append(self.xi[-1]+0.5*self.dxi05[-1])
-      
-#read .grd file
-import cattaneo as therm
-grd = Grid(therm.grd.nx, therm.grd.ny)
 s = Space(grd.nx, grd.ny)
 
 vx = np.zeros((grd.nx+1,grd.ny))#velocities - edges
@@ -33,15 +33,9 @@ sigyy = np.zeros((grd.nx,grd.ny))
 
 sigxy = np.zeros((grd.nx+1,grd.ny+1))#shear stress, density - corners
 
-rho = 1740
-llmbda = 9.4e10
-mu = 4.0e10
-dt = 1e-10
-dx = 6e-8
-dy = 6e-8
-a = dx
 
 def get_source():
+    a = dx
     import math
     vec = np.asarray([dy*(i-grd.ny/2) for i in range(grd.ny)])
     A = 2/np.sqrt(3*a)* math.pow(math.pi,1./3)
@@ -60,17 +54,14 @@ def velocity(vx, vy, sigxx, sigyy, sigxy):
     #cells X inner edges
     vy[:,1:-1] = vy[:,1:-1] + (dt/(rho*dy))*(sigyy[:,1:]-sigyy[:,:-1]) + (dt/(rho*dx))*(sigxy[1:,1:-1]-sigxy[:-1,1:-1])
     
-alpha = 2.05
-K = (llmbda+mu)/3
 
-nz = therm.grd.nz
 def sigma(vx, vy, sigxx, sigyy, sigxy):
     #cells
-    sigxx[:,:] = sigxx[:,:] + (dt*(llmbda+2*mu)/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*llmbda/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(therm.T[:,:,nz/2]-therm.T0)
-    sigyy[:,:] = sigyy[:,:] + (dt*llmbda/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*(llmbda+2*mu)/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(therm.T[:,:,nz/2]-therm.T0)
+    sigxx[:,:] = sigxx[:,:] + (dt*(C11)/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*C12/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(therm.T[:,:,nz/2]-therm.T0)
+    sigyy[:,:] = sigyy[:,:] + (dt*C12/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*(C11)/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(therm.T[:,:,nz/2]-therm.T0)
 
     #inner corners
-    sigxy[1:-1,1:-1] = sigxy[1:-1,1:-1] + (dt*mu/dy)*(vx[1:-1,1:] - vx[1:-1,:-1]) + (dt*mu/dx)*(vy[1:,1:-1] - vy[:-1,1:-1])
+    sigxy[1:-1,1:-1] = sigxy[1:-1,1:-1] + (dt*C44/dy)*(vx[1:-1,1:] - vx[1:-1,:-1]) + (dt*C44/dx)*(vy[1:,1:-1] - vy[:-1,1:-1])
 
 def boundaries(vx, vy, sigxx, sigyy, sigxy, t):
     #x = 0
@@ -81,7 +72,7 @@ def boundaries(vx, vy, sigxx, sigyy, sigxy, t):
     #vy[-0.5,:] = 0 = 0.5*(vy[-1,:] + vy[0,:])
 
     #sigxy requires fake point (vy[0,:] - vy[-1,:])/dx
-    sigxy[0,:] = sigxy[0,:] + (dt*mu/dx)*2.0*vy[0,:]
+    sigxy[0,:] = sigxy[0,:] + (dt*C44/dx)*2.0*vy[0,:]
 
     #x = -1
     #-------------free-------------------------------
@@ -130,11 +121,5 @@ def show(step):
     plt.show()
 
     
-for i in range(1000):
-    if i%50 == 0:
-        print i
-        show(i)
-    therm.step(t)
-    step(t)
-    t += dt
+
 
