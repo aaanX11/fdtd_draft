@@ -5,17 +5,20 @@ import matplotlib.colorbar as colorbar
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 
 import ini
-k0 = ini.k0
-rho = ini.rho
+therm, _ = ini.xiong2011()
+rho = therm['rho']
 
-k = ini.k
-C_V = ini.c_E*ini.rho
+k = therm['k']
+C_V = therm['C_V']
+tau = therm['tau']
 
-dt = 1e-9
-dx = ini.x
-dy = ini.x
-dz = ini.x
-a = dx
+
+
+grd = ini.Grid('x','y','z')
+dx = grd.dx
+dy = grd.dy
+dz = grd.dz
+dt = grd.dt
 
 class Model:
     def __init__(self, nx, ny, nz):
@@ -67,13 +70,13 @@ class Model:
         self.k_tab = [0]*self.layers.shape[0]
         self.C_V_tab = [0]*self.layers.shape[0]
         for i,lay in enumerate(self.layers):
-            self.rho[i] = data[i][0]
+            self.rho[i] = rho
 
-            self.tau_tab[i] = data[i][1]
+            self.tau_tab[i] = tau
             self.tau[self.lay_mask[i,:,:,:]] = self.tau_tab[i]
-            self.k_tab[i] = data[i][2]
+            self.k_tab[i] = k
             self.k[self.lay_mask[i,:,:,:]] = self.k_tab[i]
-            self.C_V_tab[i] = data[i][3]
+            self.C_V_tab[i] = C_V
             self.C_V[self.lay_mask[i,:,:,:]] = self.C_V_tab[i]
     def update(self, T):
         nx, ny, nz = self.cell.shape
@@ -84,29 +87,8 @@ class Model:
             self.k[self.lay_mask[i,:,:,:]] = data[i][2]
             self.C_V[self.lay_mask[i,:,:,:]] = data[i][3]
    
-class Grid:
-    def __init__(self, x, y):
-        self.nx = 25
-        self.ny = 20
-        self.nz = 23
-        self.xi = [float(i+1) for i in range(self.nx)]
-        self.yi = [0.1*i for i in range(self.ny)]
-        #self.zi = [0.1*i for i in range(self.nz)]
-      
-        self.dxi05 = [i-j for i,j in zip(self.xi[1:], self.xi)]
-        self.dxi05.insert(0, self.dxi05[0])
-        self.dxi05.append(self.dxi05[-1])
-        self.xi05 = [i-0.5*j for i,j in zip(self.xi, self.dxi05)]
-        self.xi05.append(self.xi[-1]+0.5*self.dxi05[-1])
-      
-#read .grd file
-grd = Grid('x','y')
 m = Model(grd.nx, grd.ny, grd.nz)
-dt = 1e-8
-dx = 1e-3
-dy = 1.5e-3
-dz = 1.2e-3
-a = dx
+
 def show1():
     plt.figure()
     plt.subplot(1, 1, 1)
@@ -127,6 +109,8 @@ T[:,:,:] = 300
 T0 = 300
 
 w = T*m.C_V
+
+k0 = 25
 
 def flux_x(qx, T):
     #print np.any(m.tau.flatten() < 1e-14)
