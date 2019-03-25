@@ -56,8 +56,7 @@ class Model:
 
         nx, ny, nz = self.cell.shape
         
-        #data = np.loadtxt('C:\ks_work\calculations\cattaneo_py_test\data1')
-        data = np.loadtxt('data')
+        
 
         self.tau = np.zeros((nx,ny, nz))
         self.k = np.zeros((nx,ny, nz))
