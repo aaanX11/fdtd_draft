@@ -35,7 +35,7 @@ def xiong2011():
 
     C_V_ph = c_E*rho_x
     #------------------------------------------
-    dt = 3*tau_x
+    dt = 0.1*tau_x
     
 
     
@@ -46,7 +46,7 @@ class Grid:
         self.nx = 25
         self.ny = 20
         self.nz = 23
-        self.xi = [float(i+1) for i in range(self.nx)]
+        self.xi = [float(i+1)*5e-10 for i in range(self.nx)]
         self.yi = [0.1*i for i in range(self.ny)]
         #self.zi = [0.1*i for i in range(self.nz)]
       
@@ -59,7 +59,7 @@ class Grid:
         self.dy = self.dx
         self.dz = self.dx
 
-        self.dt = 1e-9
+        self.dt = 4e-15
       
 #read .grd file
 #grd = Grid('x','y','z')

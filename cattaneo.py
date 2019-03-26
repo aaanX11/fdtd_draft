@@ -115,7 +115,10 @@ k0 = 25
 def flux_x(qx, T):
     #print np.any(m.tau.flatten() < 1e-14)
     #qx[1:-1,...] = ((dt)/(2*m.tau[1:,:,:]-dt))*qx[1:-1,...] -(k/dx)*((dt*(T[1:,...] - T[:-1,...]))/m.tau[1:,:,:])
-    qx[1:-1,...] = ((dt)/(2*m.tau[1:,:,:]-dt))*qx[1:-1,...] -(k/dx)*((dt*(T[1:,...] - T[:-1,...]))/m.tau[1:,:,:])
+
+    #p*q(n+1)+(1-p)*q(n)
+    p = 1
+    qx[1:-1,...] = ((m.tau[1:,:,:] - dt*(1-p))/(p*dt + m.tau[1:,:,:]))*qx[1:-1,...] -(k/dx)*((dt)/(dt*p+m.tau[1:,:,:]))*(T[1:,...] - T[:-1,...])
 
 def flux_y(qy, T):
     qy[:,1:-1,:] = qy[:,1:-1,:]-(dt*qy[:,1:-1,:])/m.tau[:,1:,:] -(k/dy)*((dt*(T[:,1:,:] - T[:,:-1,:]))/m.tau[:,1:,:])
@@ -133,8 +136,8 @@ def w_propgtn(qx, qy, qz, w, T):
 
 def boundaries(w, qx, qy, qz,T):
     qx[0,:,:] = k0*(T[0,:,:] - 300)
-    #qx[-1,:,:] = -k0*(400 - T[-1,:,:])
-    qx[-1,...] = qx[-1,...]-(dt*qx[-1,...])/m.tau[-1,:,:] -(m.k[-1,...]/dx)*((dt*(400. - T[-1,...]))/m.tau[-1,...])
+    qx[-1,:,:] = -k0*(400 - T[-1,:,:])
+    #qx[-1,...] = qx[-1,...]-(dt*qx[-1,...])/m.tau[-1,:,:] -(m.k[-1,...]/dx)*((dt*(400. - T[-1,...]))/m.tau[-1,...])
 
     qy[:,0,:] = k0*(T[:,0,:] - 300)
     qy[:,-1,:] = k0*(300 - T[:,-1,:])
@@ -173,7 +176,7 @@ class MidpointNormalize(colors.Normalize):
 def show1(step):
     fig,ax = plt.subplots()
 
-    f1, f2 = 295., 305.
+    f1, f2 = 297., 303.
     cbarticks=np.arange(f1,f2,(f2-f1)/10., dtype = np.float)
     mesh = ax.pcolormesh([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],T[:,:,grd.nz/2],cmap='coolwarm', vmin = f1, vmax = f2,
                          norm=MidpointNormalize(vmin = f1, vmax = f2, midpoint=300.))
@@ -205,11 +208,12 @@ def show_cell():
 
     
 if __name__ == '__main__':
-    for i in range(100):
-        print i
+    for i in range(100000):
+        
         step(t)
         t += dt
-        if i%1 == 0:
+        if i%10000 == 0:
+            print i
             show1(t)
 
 
