@@ -20,6 +20,8 @@ dy = grd.dy
 dz = grd.dz
 dt = grd.dt
 
+print 2*tau/dt, 10*tau/dt
+
 class Model:
     def __init__(self, nx, ny, nz):
         self.cell = np.zeros((nx,ny, nz))
@@ -208,11 +210,11 @@ def show_cell():
 
     
 if __name__ == '__main__':
-    for i in range(100000):
+    for i in range(int(100*tau/dt)):
         
         step(t)
         t += dt
-        if i%10000 == 0:
+        if i == int(2*tau/dt) or i == int(10*tau/dt) :
             print i
             show1(t)
 

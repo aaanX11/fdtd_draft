@@ -18,6 +18,8 @@ dt = grd.dt
 
 K = (C11+2*C12)/3
 
+T0 = 300
+
 
 class Space:
     def __init__(self, nx, ny):
@@ -44,7 +46,7 @@ def get_source():
     plt.show()
     return res#A*(1 - vec**2/a**2) 
     
-source = get_source()
+#source = get_source()
 
 def velocity(vx, vy, sigxx, sigyy, sigxy):
     #nx+1 ny
@@ -55,15 +57,15 @@ def velocity(vx, vy, sigxx, sigyy, sigxy):
     vy[:,1:-1] = vy[:,1:-1] + (dt/(rho*dy))*(sigyy[:,1:]-sigyy[:,:-1]) + (dt/(rho*dx))*(sigxy[1:,1:-1]-sigxy[:-1,1:-1])
     
 
-def sigma(vx, vy, sigxx, sigyy, sigxy):
+def sigma(vx, vy, sigxx, sigyy, sigxy, T):
     #cells
-    sigxx[:,:] = sigxx[:,:] + (dt*(C11)/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*C12/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(therm.T[:,:,nz/2]-therm.T0)
-    sigyy[:,:] = sigyy[:,:] + (dt*C12/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*(C11)/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(therm.T[:,:,nz/2]-therm.T0)
+    sigxx[:,:] = sigxx[:,:] + (dt*(C11)/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*C12/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(T-T0)
+    sigyy[:,:] = sigyy[:,:] + (dt*C12/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*(C11)/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*(T-T0)
 
     #inner corners
     sigxy[1:-1,1:-1] = sigxy[1:-1,1:-1] + (dt*C44/dy)*(vx[1:-1,1:] - vx[1:-1,:-1]) + (dt*C44/dx)*(vy[1:,1:-1] - vy[:-1,1:-1])
 
-def boundaries(vx, vy, sigxx, sigyy, sigxy, t):
+def boundaries(vx, vy, sigxx, sigyy, sigxy, t, T):
     #x = 0
     #-------------fixed-------------------------------
     #vx, sigxy = 0
@@ -84,7 +86,7 @@ def boundaries(vx, vy, sigxx, sigyy, sigxy, t):
 
     
     #vx requires fake points 
-    vx[-1,:] = vx[-1,:] + (dt/(rho*dx))*(2*alpha*K*(therm.T[-1,:,nz/2]-therm.T0)- sigxx[-1,:] - sigxx[-1,:])
+    vx[-1,:] = vx[-1,:] + (dt/(rho*dx))*(2*alpha*K*(T[-1,:]-T0)- sigxx[-1,:] - sigxx[-1,:])
     
     #FORCING SOURCE
      
@@ -107,19 +109,40 @@ def boundaries(vx, vy, sigxx, sigyy, sigxy, t):
     
     vy[:,-1] = vy[:,-1] + (dt/(rho*dx))*(-2.0)*sigyy[:,-1]
 
-t = 0
-def step(t):
+#t = 0
+def step(t, T):
     velocity(vx, vy, sigxx, sigyy, sigxy)
-    sigma(vx, vy, sigxx, sigyy, sigxy)
-    boundaries(vx, vy, sigxx, sigyy, sigxy, t)
+    sigma(vx, vy, sigxx, sigyy, sigxy, T)
+    boundaries(vx, vy, sigxx, sigyy, sigxy, t, T)
 
 def show(step):
     plt.figure()
     plt.subplot(1, 1, 1)
     plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx+1)],vx)
-    plt.gca().set_title(str(step))
+    plt.gca().set_title('Vx'+str(step))
     plt.show()
 
-    
+def showSig(step):
+    plt.figure()
+    plt.subplot(1, 1, 1)
+    plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],sigxx)
+    plt.gca().set_title('SIGMA_xx'+str(step))
+    plt.show()
+
+def showSig_1d(step):
+    plt.figure()
+    plt.subplot(1, 1, 1)
+    plt.plot(sigxx[:,grd.ny/2])
+    #plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],sigxx)
+    plt.gca().set_title('SIGMA_xx'+str(step))
+    plt.show()
+
+def showSig_1d(step, T):
+    plt.figure()
+    plt.subplot(1, 1, 1)
+    plt.plot(sigxx[:,grd.ny/2])
+    #plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],sigxx)
+    plt.gca().set_title('SIGMA_xx'+str(step))
+    plt.show()
 
 

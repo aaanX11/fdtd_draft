@@ -43,7 +43,7 @@ def xiong2011():
 
 class Grid:
     def __init__(self, x, y, z):
-        self.nx = 25
+        self.nx = 100
         self.ny = 20
         self.nz = 23
         self.xi = [float(i+1)*5e-10 for i in range(self.nx)]
