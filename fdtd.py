@@ -137,7 +137,7 @@ def showSig_1d(step):
     plt.gca().set_title('SIGMA_xx'+str(step))
     plt.show()
 
-def showSig_1d(step, T):
+def showSigT_1d(step, T):
     plt.figure()
     plt.subplot(1, 1, 1)
     plt.plot(sigxx[:,grd.ny/2])
