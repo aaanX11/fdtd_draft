@@ -8,7 +8,8 @@ class Model:
     def mat_properties(self):
         self.layers = np.unique(self.cell.flatten())
         lay_mask = np.empty((self.layers.shape()[0], nx, ny, nz),dtype=np.int32)
-        
+        self.fill_cells()
+        self.fill_arrays()
         for i,lay in enumerate(self.layers):
             lay_mask[i] = (self.cell==lay)
         
@@ -17,13 +18,13 @@ class Model:
         self.cell[:,ny/3:ny/2,nz/2:] = 2
 
     def fill_arrays(self):
-        data = np.loadtxt('test.txt')
+        data = np.loadtxt('D:\\ipm_prj\\calculations\\cattaneo_py_test\\data')
         rho = []*self.layers.shape()[0]
         for i,lay in enumerate(self.layers):
-            rho = 
-            self.tau[lay_mask[i]] = 1
-            self.k[lay_mask[i]] = 2
-            self.C_V[lay_mask[i]]
+            rho[i] = data[i][0]
+            self.tau[lay_mask[i]] = data[i][1]
+            self.k[lay_mask[i]] = data[i][2]
+            self.C_V[lay_mask[i]] = data[i][3]
 
         
 class Grid:
@@ -107,11 +108,17 @@ def show(step):
     plt.gca().set_title(str(step))
     plt.show()
 
-    
+
+plt.figure()
+plt.subplot(1, 1, 1)
+plt.contourf([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],[:,:,grd.nz/2])
+plt.gca().set_title(str(step))
+plt.show()
+
 for i in range(20000):
     if i%1000 == 0:
         print i
-        show(i)
+        #show(i)
     step(t)
     t += dt
 
