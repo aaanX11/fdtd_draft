@@ -98,7 +98,7 @@ def show1():
     plt.gca().set_title("tau")
     plt.colorbar()
     plt.show()
-show1()
+#show1()
 
 qx = np.zeros((grd.nx+1,grd.ny, grd.nz))#fluxes - faces
 qy = np.zeros((grd.nx,grd.ny+1, grd.nz))
