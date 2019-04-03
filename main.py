@@ -21,7 +21,7 @@ grd = ini.Grid('x','y','z')
 
 
 def addSubplot(fig, ax, arr, title):
-    #ax.clear()
+    ax.clear()
     ax.plot(arr)
     
 
@@ -66,14 +66,32 @@ def step():
     global t
     #if i == 23 or i == 117:
     therm.step(t)
-    mech.step(t, therm.T[:,:,grd.nz/2])
+    mech.step(t, therm.T_der[:,:,grd.nz/2])
     t += grd.dt
     
 def onclick(event):
     step_series(10)
     
 def formula(ax):
-    pass
+    ax.axis('off')
+    ax.xticks=()
+    ax.yticks=()
+    
+    strings = [r"$\frac{\partial \sigma_{11}}{\partial t} = C_{11}\frac{\partial v_1}{\partial x_1} + C_{12}\frac{\partial v_2}{\partial x_2} - \alpha K\dot{T}$",
+               r"$\frac{\partial \sigma_{22}}{\partial t} = C_{12}\frac{\partial v_1}{\partial x_1} + C_{11}\frac{\partial v_2}{\partial x_2} - \alpha K\dot{T}$",
+               r"$\frac{\partial \sigma_{12}}{\partial t} =\frac{C_{44}}{2}\left(\frac{\partial v_1}{\partial x_2} +\frac{\partial v_2}{\partial x_1}\right)$",
+               r"$\rho\frac{\partial v_1}{\partial t} = \frac{\partial \sigma_{11}}{\partial x_1} + \frac{\partial \sigma_{12}}{\partial x_2}$",
+               r"$\rho\frac{\partial v_2}{\partial t} = \frac{\partial \sigma_{12}}{\partial x_1} + \frac{\partial \sigma_{22}}{\partial x_2}$"
+               ]
+    nn = len(strings)
+    for y, string in zip([0.95-(1.0/(nn+1))*i for i in range(nn)], strings):
+        ax.text(0.05, y, string, fontsize=16)
+        #print string
+    strings = [r"$\frac{\partial w}{\partial t} +div \mathbb{q} = 0$",
+               r"$\tau \frac{\partial \mathbb{q}}{\partial t} +\lambda\nabla T = -\mathbb{q}$"
+               ]
+    for y, string in zip([0.95-(1.0/(nn+1))*i for i in range(nn)], strings):
+        ax.text(0.6, y, string, fontsize=16)
 
 
 if __name__ == "__main__":

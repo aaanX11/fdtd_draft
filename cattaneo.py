@@ -107,7 +107,7 @@ qz = np.zeros((grd.nx,grd.ny, grd.nz+1))
 w = np.zeros((grd.nx,grd.ny, grd.nz))#w
 T = np.zeros((grd.nx,grd.ny, grd.nz))#w
 T[:,:,:] = 300
-
+T_der = np.zeros((grd.nx,grd.ny, grd.nz)) 
 T0 = 300
 
 w = T*m.C_V
@@ -130,7 +130,9 @@ def flux_z(qz, T):
 
 def w_propgtn(qx, qy, qz, w, T):
     w[:,:,:] = w - (dt/dx)*(qx[1:,:,:] - qx[:-1,:,:]) - (dt/dy)*(qy[:,1:,:] - qy[:,:-1,:]) - (dt/dz)*(qz[:,:,1:] - qz[:,:,:-1])
+    T_der[:,:,:] = (w/m.C_V-T)/dt
     T[:,:,:] = w/m.C_V
+    
     if np.any(T.flatten() > 600) or np.any(T.flatten() < 250):
         print 'ALARM'
         print T[:,grd.ny/2,grd.nz/2]
