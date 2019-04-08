@@ -18,6 +18,7 @@ def xiong2011():
     k_x = 1.7e2 #W m^-1 K^-1
     
     c_str2 = (lmbda_x+2*mu_x)/rho_x
+    print math.sqrt(c_str2)
     eta = rho_x*c_E/k_x
     tau_star  = 0.05
 

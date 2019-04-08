@@ -128,34 +128,40 @@ def flux_y(qy, T):
 def flux_z(qz, T):
     qz[...,1:-1] = qz[...,1:-1]-(dt*qz[...,1:-1])/m.tau[:,:,1:] -(k/dz)*((dt*(T[:,:,1:] - T[:,:,:-1]))/m.tau[:,:,1:])
 
-def w_propgtn(qx, qy, qz, w, T):
+def w_propgtn(qx, qy, qz, w, T,t):
     w[:,:,:] = w - (dt/dx)*(qx[1:,:,:] - qx[:-1,:,:]) - (dt/dy)*(qy[:,1:,:] - qy[:,:-1,:]) - (dt/dz)*(qz[:,:,1:] - qz[:,:,:-1])
     T_der[:,:,:] = (w/m.C_V-T)/dt
+    tau0 = np.amax(m.tau[-1,:,:])
+    T_der[-1,:,:] = 300*np.exp(-t/tau0)/tau0
     T[:,:,:] = w/m.C_V
+
+def boundaries(w, qx, qy, qz,T, t):
+##    qx[0,:,:] = k0*(T[0,:,:] - 300)
+##    qx[-1,:,:] = -k0*(400 - T[-1,:,:])
+##    #qx[-1,...] = qx[-1,...]-(dt*qx[-1,...])/m.tau[-1,:,:] -(m.k[-1,...]/dx)*((dt*(400. - T[-1,...]))/m.tau[-1,...])
+##
+##    qy[:,0,:] = k0*(T[:,0,:] - 300)
+##    qy[:,-1,:] = k0*(300 - T[:,-1,:])
+##
+##    qz[:,:,0] = k0*(T[:,:,0] - 300)
+##    qz[:,:,-1] = k0*(300 - T[:,:,-1])
+    qx[0,:,:] = 0
+    qx[-1,:,:] = 0
+    qy[:,0,:] = 0
+    qy[:,-1,:] = 0
+    qz[:,:,0] = 0
+    qz[:,:,-1] = 0
+    T[-1,:,:] = 300+300*(1-np.exp(-t/m.tau[-1,:,:]))
+    w[-1,:,:] = T[-1,:,:]*m.C_V[-1,:,:]
     
-    if np.any(T.flatten() > 600) or np.any(T.flatten() < 250):
-        print 'ALARM'
-        print T[:,grd.ny/2,grd.nz/2]
-        raw_input()
-
-def boundaries(w, qx, qy, qz,T):
-    qx[0,:,:] = k0*(T[0,:,:] - 300)
-    qx[-1,:,:] = -k0*(400 - T[-1,:,:])
-    #qx[-1,...] = qx[-1,...]-(dt*qx[-1,...])/m.tau[-1,:,:] -(m.k[-1,...]/dx)*((dt*(400. - T[-1,...]))/m.tau[-1,...])
-
-    qy[:,0,:] = k0*(T[:,0,:] - 300)
-    qy[:,-1,:] = k0*(300 - T[:,-1,:])
-
-    qz[:,:,0] = k0*(T[:,:,0] - 300)
-    qz[:,:,-1] = k0*(300 - T[:,:,-1])
 
 t = 0
 def step(t):
     flux_x(qx, T)
     flux_y(qy, T)
     flux_z(qz, T)
-    w_propgtn(qx, qy, qz, w, T)
-    boundaries(w, qx, qy, qz, T)
+    w_propgtn(qx, qy, qz, w, T, t)
+    boundaries(w, qx, qy, qz, T, t)
 
 def show(step):
     plt.figure()

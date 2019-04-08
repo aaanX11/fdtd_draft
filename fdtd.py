@@ -58,9 +58,14 @@ def velocity(vx, vy, sigxx, sigyy, sigxy):
     
 
 def sigma(vx, vy, sigxx, sigyy, sigxy, T):
+    vx_d = vx[1:,:] - vx[:-1,:]
+    
+    print 'sigma_terms\nalpha *K *derivative = ', alpha*K*T[-3:-1, grd.ny/2]
+    print 'C11*vx_deriv_x = ', C11*vx_d[-3:-1,grd.ny/2]/dx
+    
     #cells
-    sigxx[:,:] = sigxx[:,:] + (dt*(C11)/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*C12/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*T
-    sigyy[:,:] = sigyy[:,:] + (dt*C12/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*(C11)/dy)*(vy[:,1:] - vy[:,:-1])-alpha*K*T
+    sigxx[:,:] = sigxx[:,:] + (dt*(C11)/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*C12/dy)*(vy[:,1:] - vy[:,:-1])-dt*alpha*K*T
+    sigyy[:,:] = sigyy[:,:] + (dt*C12/dx)*(vx[1:,:] - vx[:-1,:]) + (dt*(C11)/dy)*(vy[:,1:] - vy[:,:-1])-dt*alpha*K*T
 
     #inner corners
     sigxy[1:-1,1:-1] = sigxy[1:-1,1:-1] + (dt*C44/dy)*(vx[1:-1,1:] - vx[1:-1,:-1]) + (dt*C44/dx)*(vy[1:,1:-1] - vy[:-1,1:-1])
@@ -81,12 +86,14 @@ def boundaries(vx, vy, sigxx, sigyy, sigxy, t, T):
     #sigxx, sigxy = 0
     
     sigxy[-1,:] = 0
-    #sigxx[-1+1,:] = 2*alpha*K*(therm.T[:,:,nz/2]-therm.T0)- sigxx[-1,:] - sigxx[-1,:]
-    #sigxx[-0.5,:] = 0 = 0.5*(sigxx[-1,:] + sigxx[-1+1,:])-alpha*K*(T-T0)
+    #sigxx[-1+1,:] = - sigxx[-1,:]
+    #sigxx[-0.5,:] = 0 = 0.5*(sigxx[-1,:] + sigxx[-1+1,:])
 
     
     #vx requires fake points 
-    vx[-1,:] = vx[-1,:] + (dt/(rho*dx))*(2*alpha*K*T[-1,:]- sigxx[-1,:] - sigxx[-1,:])#<--------------------------------------------------------------------------------------------------????????????????????????????????????
+    vx[-1,:] = vx[-1,:] + (dt/(rho*dx))*( -sigxx[-1,:] - sigxx[-1,:])
+
+    ##vx[-1,:] = vx[-1,:] + (dt/(rho*dx))*( 0 - alpha*K*T[-1,:])#<--------------------------------------------------------------------------------------------------????????????????????????????????????
     
     #FORCING SOURCE
      

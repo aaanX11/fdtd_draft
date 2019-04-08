@@ -27,6 +27,7 @@ def addSubplot(fig, ax, arr, title):
 
     Marr = max(arr)
     marr = min(arr)
+    print Marr, marr, title
     ampl = Marr-marr
     if ampl == 0:
         ampl = 1e-7
