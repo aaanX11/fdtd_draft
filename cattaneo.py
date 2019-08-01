@@ -5,22 +5,21 @@ import matplotlib.colorbar as colorbar
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 
 import ini
-therm, _ = ini.xiong2011()
+# therm, _, sources = ini.chelkanov2019()
+therm, _, sources = ini.xiong2011()
 rho = therm['rho']
 
 k = therm['k']
 C_V = therm['C_V']
 tau = therm['tau']
 
-
-
-grd = ini.Grid('x','y','z')
+grd = ini.Grid('x', 'y', 'z')
 dx = grd.dx
 dy = grd.dy
 dz = grd.dz
 dt = grd.dt
 
-print 2*tau/dt, 10*tau/dt
+source_f, b_source_f = sources
 
 class Model:
     def __init__(self, nx, ny, nz):
@@ -51,11 +50,11 @@ class Model:
         self.rho[i] = rho
 
         self.tau_tab[i] = tau
-        self.tau[self.lay_mask[i,:,:,:]] = self.tau_tab[i]
+        self.tau[self.lay_mask[i, :, :, :]] = self.tau_tab[i]
         self.k_tab[i] = k
-        self.k[self.lay_mask[i,:,:,:]] = self.k_tab[i]
+        self.k[self.lay_mask[i, :, :, :]] = self.k_tab[i]
         self.C_V_tab[i] = C_V
-        self.C_V[self.lay_mask[i,:,:,:]] = self.C_V_tab[i]
+        self.C_V[self.lay_mask[i, :, :, :]] = self.C_V_tab[i]
 
     def fill_arrays(self):
 
@@ -101,13 +100,26 @@ def show1():
 #show1()
 
 qx = np.zeros((grd.nx+1,grd.ny, grd.nz))#fluxes - faces
-qy = np.zeros((grd.nx,grd.ny+1, grd.nz))
-qz = np.zeros((grd.nx,grd.ny, grd.nz+1))
+qy = np.zeros((grd.nx, grd.ny+1, grd.nz))
+qz = np.zeros((grd.nx, grd.ny, grd.nz+1))
 
-w = np.zeros((grd.nx,grd.ny, grd.nz))#w
-T = np.zeros((grd.nx,grd.ny, grd.nz))#w
-T[:,:,:] = 300
-T_der = np.zeros((grd.nx,grd.ny, grd.nz)) 
+w = np.zeros((grd.nx, grd.ny, grd.nz))
+source = np.zeros((grd.nx, grd.ny, grd.nz))
+v_source_f = np.vectorize(source_f)
+
+T = np.zeros((grd.nx, grd.ny, grd.nz))
+T_old = np.zeros((grd.nx, grd.ny, grd.nz))
+T[:, :, :] = 300
+T_old[:, :, :] = 300
+T_der_ = np.zeros((grd.nx, grd.ny, grd.nz, 6))
+for ix in range(grd.nx):
+    for iy in range(grd.ny):
+        for iz in range(grd.nz):
+            T_der_[ix, iy, iz, 0] = 0 - 3*dt
+            T_der_[ix, iy, iz, 1] = 0 - 2*dt
+            T_der_[ix, iy, iz, 2] = 0 - 1*dt
+            T_der_[ix, iy, iz, 3:] = 300
+T_der = np.zeros((grd.nx, grd.ny, grd.nz))
 T0 = 300
 
 w = T*m.C_V
@@ -120,20 +132,44 @@ def flux_x(qx, T):
 
     #p*q(n+1)+(1-p)*q(n)
     p = 1
-    qx[1:-1,...] = ((m.tau[1:,:,:] - dt*(1-p))/(p*dt + m.tau[1:,:,:]))*qx[1:-1,...] -(k/dx)*((dt)/(dt*p+m.tau[1:,:,:]))*(T[1:,...] - T[:-1,...])
+    qx[1:-1, ...] = ((m.tau[1:, :, :] - dt*(1-p))/(p*dt + m.tau[1:, :, :]))*qx[1:-1, ...] \
+                    - (k/dx)*((dt)/(dt*p+m.tau[1:, :, :]))*(T[1:, ...] - T[:-1, ...])
+
 
 def flux_y(qy, T):
-    qy[:,1:-1,:] = qy[:,1:-1,:]-(dt*qy[:,1:-1,:])/m.tau[:,1:,:] -(k/dy)*((dt*(T[:,1:,:] - T[:,:-1,:]))/m.tau[:,1:,:])
+    qy[:, 1:-1, :] = qy[:, 1:-1, :]\
+                     - (dt*qy[:, 1:-1, :])/m.tau[:, 1:, :] \
+                     - (k/dy)*((dt*(T[:, 1:, :] - T[:, :-1, :]))/m.tau[:, 1:, :])
+
 
 def flux_z(qz, T):
-    qz[...,1:-1] = qz[...,1:-1]-(dt*qz[...,1:-1])/m.tau[:,:,1:] -(k/dz)*((dt*(T[:,:,1:] - T[:,:,:-1]))/m.tau[:,:,1:])
+    qz[..., 1:-1] = qz[...,1:-1]-(dt*qz[...,1:-1])/m.tau[:,:,1:] -(k/dz)*((dt*(T[:,:,1:] - T[:,:,:-1]))/m.tau[:,:,1:])
+
 
 def w_propgtn(qx, qy, qz, w, T,t):
-    w[:,:,:] = w - (dt/dx)*(qx[1:,:,:] - qx[:-1,:,:]) - (dt/dy)*(qy[:,1:,:] - qy[:,:-1,:]) - (dt/dz)*(qz[:,:,1:] - qz[:,:,:-1])
-    T_der[:,:,:] = (w/m.C_V-T)/dt
-    tau0 = np.amax(m.tau[-1,:,:])
-    T_der[-1,:,:] = 300*np.exp(-t/tau0)/tau0
-    T[:,:,:] = w/m.C_V
+    source[:, grd.ny/2, grd.nz/2] = v_source_f(source[:, grd.ny/2, grd.nz/2])
+    source[:, :, :] = source[:, grd.ny / 2:grd.ny / 2+1, grd.nz / 2:grd.nz / 2+1]
+
+    w[:, :, :] = w \
+               - (dt/dx)*(qx[1:, :, :] - qx[:-1, :, :]) \
+               - (dt/dy)*(qy[:, 1:, :] - qy[:, :-1, :]) \
+               - (dt/dz)*(qz[:, :, 1:] - qz[:, :, :-1]) + dt*source
+    # T_der[:,:,:] = (w/m.C_V-T)/dt
+    tau0 = np.amax(m.tau[0, :, :])
+    T[0, :, :] = b_source_f(t)
+
+    w[0, :, :] = T[0, :, :]*m.C_V[0, ...]
+
+    T[0:, :, :] = w[0:, :, :] / m.C_V
+
+    T_der_[:, :, :, 0] = T_der_[:, :, :, 1]
+    T_der_[:, :, :, 1] = T_der_[:, :, :, 2]
+    T_der_[:, :, :, 2] = t
+
+    T_der_[:, :, :, 3] = T_der_[:, :, :, 4]
+    T_der_[:, :, :, 4] = T_der_[:, :, :, 5]
+    T_der_[:, :, :, 5] = T
+
 
 def boundaries(w, qx, qy, qz,T, t):
 ##    qx[0,:,:] = k0*(T[0,:,:] - 300)
@@ -145,18 +181,19 @@ def boundaries(w, qx, qy, qz,T, t):
 ##
 ##    qz[:,:,0] = k0*(T[:,:,0] - 300)
 ##    qz[:,:,-1] = k0*(300 - T[:,:,-1])
-    qx[0,:,:] = 0
-    qx[-1,:,:] = 0
-    qy[:,0,:] = 0
-    qy[:,-1,:] = 0
-    qz[:,:,0] = 0
-    qz[:,:,-1] = 0
-    T[-1,:,:] = 300+300*(1-np.exp(-t/m.tau[-1,:,:]))
-    w[-1,:,:] = T[-1,:,:]*m.C_V[-1,:,:]
+    qx[0, :, :] = 0
+    qx[-1, :, :] = 0
+    qy[:, 0, :] = 0
+    qy[:, -1, :] = 0
+    qz[:, :, 0] = 0
+    qz[:, :, -1] = 0
+    # T[0, :, :] =
+    # w[0, :, :] = T[0, :, :]*m.C_V[0, :, :]
     
 
 t = 0
 def step(t):
+    #print 't'
     flux_x(qx, T)
     flux_y(qy, T)
     flux_z(qz, T)
@@ -189,7 +226,7 @@ def show1(step):
     cbarticks=np.arange(f1,f2,(f2-f1)/10., dtype = np.float)
     mesh = ax.pcolormesh([dy*i for i in range(grd.ny)], [dx*i for i in range(grd.nx)],T[:,:,grd.nz/2],cmap='coolwarm', vmin = f1, vmax = f2,
                          norm=MidpointNormalize(vmin = f1, vmax = f2, midpoint=300.))
-    print T[:,:,grd.nz/2].min(), T[:,:,grd.nz/2].max()                         
+    #print T[:,:,grd.nz/2].min(), T[:,:,grd.nz/2].max()                         
     cbar = fig.colorbar(mesh, ax=ax , cmap='coolwarm', ticks=cbarticks)
     cbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.1lf'))
     cbar.ax.yaxis.set_minor_formatter(FormatStrFormatter('%.1lf'))
